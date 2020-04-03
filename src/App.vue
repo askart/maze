@@ -24,7 +24,7 @@ export default {
     return {
       height: 180,
       width: 360,
-      delay: 10,
+      delay: 50,
       maze: [],
     }
   },
