@@ -22,17 +22,27 @@ var cloneDeep = require("lodash.clonedeep")
 export default {
   data() {
     return {
-      height: 180,
-      width: 360,
-      delay: 50,
+      height: 25,
+      width: 25,
+      delay: 10,
       maze: [],
+      mazeBuildStatus: "",
     }
+  },
+  watch: {
+    mazeBuildStatus: {
+      handler: function (val) {
+        if (val == "finished") {
+          setTimeout(() => {
+            this.buildMaze()
+          }, 2000)
+        }
+      },
+    },
   },
   created() {
     this.initMaze()
-    this.maze = cloneDeep(this.maze)
-    let [steps, grid] = this.makePath("breadth")
-    this.drawMaze("normal", steps, grid)
+    this.buildMaze()
   },
   methods: {
     initMaze() {
@@ -49,17 +59,23 @@ export default {
         }
       }
     },
+    buildMaze() {
+      this.mazeBuildStatus = "started"
+      this.maze = cloneDeep(this.maze)
+      let [grid] = this.makePath("depth")
+      this.drawMaze(grid)
+    },
     makePath(type) {
       if (type == "breadth") {
         return this.makePathBreadth()
       } else if (type == "depth") {
         let grid = makeGrid(this.height, this.width, 0)
-        return this.makePathDepth(0, 0, grid, [{x: 0, y: 0, val: 0}])
+        return this.makePathDepth(0, 0, grid)
       }
     },
     makePathBreadth() {
       let grid = makeGrid(this.height, this.width, 0)
-      let stack = [], n = 0, steps = []
+      let stack = [], n = 0
       stack.push({cx: 0, cy: 0})
       n++
       while (n > 0) {
@@ -72,73 +88,84 @@ export default {
             grid[cy][cx] |= VALUE[dir]
             stack.push({cx, cy})
             n++
-            steps.push({x: cx, y: cy, val: grid[cy][cx]})
             grid[ny][nx] |= VALUE[OPPOSITE[dir]]
             stack.push({cx: nx, cy: ny})
             n++
-            steps.push({x: nx, y: ny, val: grid[ny][nx]})
           }
         })
-        steps.push({x: cx, y: cy, val: grid[cy][cx]})
       }
-      return [steps, grid]
+      return [grid]
     },
-    makePathDepth(cx, cy, grid, steps) {
+    makePathDepth(cx, cy, grid) {
       let directions = getDirections()
       directions.forEach(dir => {
         let nx = cx + DX[dir], ny = cy + DY[dir]
         if ((ny >= 0 && ny < this.height) && (nx >= 0 && nx < this.width) && grid[ny][nx] == 0) {
           grid[cy][cx] |= VALUE[dir]
           grid[ny][nx] |= VALUE[OPPOSITE[dir]]
-          steps.push({x: cx, y: cy, val: grid[cy][cx]})
-          steps.push({x: nx, y: ny, val: grid[ny][nx]})
-          this.makePathDepth(nx, ny, grid, steps)
-          steps.push({x: nx, y: ny, val: grid[ny][nx]})
-          steps.push({x: cx, y: cy, val: grid[cy][cx]})
+          this.makePathDepth(nx, ny, grid)
         }
       })
-      return [steps, grid]
+      return [grid]
     },
-    drawMaze(type, steps, grid) {
-      if (type == "delay") {
-        this.drawMazeWithDelay(0, steps)
-      } else if (type == "normal") {
-        this.drawMazeNormal(grid)
-      }
+    drawMaze(grid) {
+      this.drawMazeWithDelay(grid)
     },
-    drawMazeWithDelay(index, steps) {
-      if (index < steps.length) {
-        let {x, y} = steps[index]
-        this.maze[y][x].push("grid__cell--current")
-        setTimeout(() => {
-          let mIndex = this.maze[y][x].findIndex(cellClass => cellClass == "grid__cell--current")
-          if (mIndex != -1) this.maze[y][x].splice(mIndex, 1)
-          this.decorateCell(steps[index])
-          this.drawMazeWithDelay(index + 1, steps)
-        }, this.delay)
-      }
-    },
-    drawMazeNormal(grid) {
+    drawMazeWithDelay(grid) {
+      let maze = cloneDeep(this.maze)
       for (let y = 0; y < this.height; y++) {
         for (let x = 0; x < this.width; x++) {
-          this.decorateCell({x, y, val: grid[y][x]})
+          this.decorateCell(maze, {x, y, val: grid[y][x]})
         }
       }
+      this.maze = maze
+      this.$nextTick(() => {
+        this.mazeBuildStatus = "finished"
+      })
     },
-    decorateCell({x, y, val}) {
+    decorateCell(maze, {x, y, val}) {
+      let cellClone = cloneDeep(maze[y][x])
+
+      let index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-bottom")
+      if (index != -1) maze[y][x].splice(index, 1)
+      index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-right")
+      if (index != -1) maze[y][x].splice(index, 1)
+      index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-right-to-bottom")
+      if (index != -1) maze[y][x].splice(index, 1)
+      index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-bottom-to-right")
+      if (index != -1) maze[y][x].splice(index, 1)
+
       if ((val & VALUE["S"]) == 0) {
-        this.maze[y][x].push("grid__cell--border-bottom")
+        maze[y][x].push("grid__cell--border-bottom")
       } else {
-        let index = this.maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-bottom")
-        if (index != -1) this.maze[y][x].splice(index, 1)
+        let index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-bottom")
+        if (index != -1) maze[y][x].splice(index, 1)
       }
       if ((val & VALUE["E"]) == 0) {
-        this.maze[y][x].push("grid__cell--border-right")
+        maze[y][x].push("grid__cell--border-right")
       } else {
-        let index = this.maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-right")
-        if (index != -1) this.maze[y][x].splice(index, 1)
+        let index = maze[y][x].findIndex(cellClass => cellClass == "grid__cell--border-right")
+        if (index != -1) maze[y][x].splice(index, 1)
+      }
+      let cond1 =
+        this.hasClass(cellClone, "grid__cell--border-right")
+        && !this.hasClass(cellClone, "grid__cell--border-bottom")
+        && this.hasClass(maze[y][x], "grid__cell--border-bottom")
+        && !this.hasClass(maze[y][x], "grid__cell--border-right")
+      let cond2 =
+        this.hasClass(cellClone, "grid__cell--border-bottom")
+        && !this.hasClass(cellClone, "grid__cell--border-right")
+        && this.hasClass(maze[y][x], "grid__cell--border-right")
+        && !this.hasClass(maze[y][x], "grid__cell--border-bottom")
+      if (cond1) {
+        maze[y][x].push("grid__cell--border-right-to-bottom")
+      } else if (cond2) {
+        maze[y][x].push("grid__cell--border-bottom-to-right")
       }
     },
+    hasClass(arr, className) {
+      return arr.findIndex(cellClass => cellClass == className) != -1
+    }
   }
 }
 </script>
@@ -163,26 +190,63 @@ body, html
     display flex
   &__cell
     display inline-block
-    height 5px
-    width 5px
+    position relative
+    height 30px
+    width 30px
     box-sizing border-box
-    border-color red
-    border-width 0px
-    transition 1s all
-    &--current
-      background-color rgba(255, 0, 0, 1)
+    border 1px solid transparent
+    &:before
+      content: ""
+      position absolute
+      left calc((30px - 1px) / 2 - 2px / 2)
+      top calc((30px - 1px) / 2 - 2px / 2)
+      width 2px
+      height 2px
+      background-color white
+      box-sizing border-box
     &--border-top
-      border-top 1px solid black
-      transition 5s border-top
+      border-top-color black
+      transition .5s border ease-out
+      box-sizing border-box
     &--border-right
-      border-right 1px solid black
-      transition 5s border-right
+      border-right-color black
+      transition .5s border ease-out
+      box-sizing border-box
+    &--border-right&--border-bottom-to-right
+      border-right-color transparent
     &--border-bottom
-      border-bottom 1px solid black
-      transition 5s border-bottom
+      border-bottom-color black
+      transition .5s border ease-out
+      box-sizing border-box
+    &--border-bottom&--border-right-to-bottom
+      border-bottom-color transparent
     &--border-left
-      border-left 1px solid black
-      transition 5s border-left
+      border-left-color black
+      transition .5s border ease-out
+      box-sizing border-box
+    &--border-right-to-bottom:after
+      content ''
+      position absolute
+      height 100%
+      width 100%
+      border 1px solid transparent
+      border-right 1px solid red
+      box-sizing border-box
+      transform-origin 100% 100%
+      transform rotate(-90deg)
+      transition .5s transform ease-out
+    &--border-bottom-to-right:after
+      content ''
+      position absolute
+      height 100%
+      width 100%
+      border 1px solid transparent
+      border-bottom 1px solid red
+      box-sizing border-box
+      transform-origin 100% 100%
+      transform rotate(90deg)
+      transition .5s transform ease-out
+
   &:not(:first-child)
     margin-left 10px
 </style>
