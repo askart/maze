@@ -82,7 +82,6 @@ module.exports = {
       template: "index.html",
       inject: true,
       title: "maze",
-      favicon: "favicon.png",
       chunksSortMode: "dependency",
     }),
     new InlineManifestWebpackPlugin(),
