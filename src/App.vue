@@ -114,7 +114,7 @@ export default {
           let mIndex = this.maze[y][x].findIndex(cellClass => cellClass == "grid__cell--current")
           if (mIndex != -1) this.maze[y][x].splice(mIndex, 1)
           this.decorateCell(steps[index])
-          this.drawMaze(index + 1, steps)
+          this.drawMazeWithDelay(index + 1, steps)
         }, this.delay)
       }
     },
