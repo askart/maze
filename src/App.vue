@@ -21,14 +21,11 @@ import {
   DX, DY,
   OPPOSITE} from "@/utils"
 
-// var cloneDeep = require("lodash.clonedeep")
-
-
 export default {
   data() {
     return {
-      height: 25,
-      width: 45,
+      height: 10,
+      width: 15,
       delay: 10,
       jointMatrix: [],
       mazeBuildStatus: "",
@@ -40,7 +37,7 @@ export default {
         if (val == "finished") {
           setTimeout(() => {
             this.buildMaze()
-          }, 2000)
+          }, 5000)
         }
       },
     },
@@ -51,39 +48,12 @@ export default {
   methods: {
     buildMaze() {
       this.mazeBuildStatus = "started"
-      let [grid] = this.makePath("depth")
+      let grid = this.makePath()
       this.drawMaze(grid)
     },
-    makePath(type) {
-      if (type == "breadth") {
-        return this.makePathBreadth()
-      } else if (type == "depth") {
-        let grid = makeGrid(this.height, this.width, 0)
-        return this.makePathDepth(0, 0, grid)
-      }
-    },
-    makePathBreadth() {
+    makePath() {
       let grid = makeGrid(this.height, this.width, 0)
-      let stack = [], n = 0
-      stack.push({cx: 0, cy: 0})
-      n++
-      while (n > 0) {
-        let {cx, cy} = stack.pop()
-        n--
-        let directions = getDirections()
-        directions.forEach(dir => {
-          let nx = cx + DX[dir], ny = cy + DY[dir]
-          if ((ny >= 0 && ny < this.height) && (nx >= 0 && nx < this.width) && grid[ny][nx] == 0) {
-            grid[cy][cx] |= VALUE[dir]
-            stack.push({cx, cy})
-            n++
-            grid[ny][nx] |= VALUE[OPPOSITE[dir]]
-            stack.push({cx: nx, cy: ny})
-            n++
-          }
-        })
-      }
-      return [grid]
+      return this.makePathDepth(0, 0, grid)
     },
     makePathDepth(cx, cy, grid) {
       let directions = getDirections()
@@ -95,7 +65,7 @@ export default {
           this.makePathDepth(nx, ny, grid)
         }
       })
-      return [grid]
+      return grid
     },
     drawMaze(grid) {
       let jointMatrix = []
@@ -103,12 +73,10 @@ export default {
         jointMatrix[y - 1] = []
         for (let x = 1; x < this.width; x++) {
           let joint = {}
-
           joint.W = (grid[y - 1][x - 1] & VALUE["S"]) == 0
           joint.N = (grid[y - 1][x - 1] & VALUE["E"]) == 0
           joint.E = (grid[y][x] & VALUE["N"]) == 0
           joint.S = (grid[y][x] & VALUE["W"]) == 0
-
           jointMatrix[y - 1][x - 1] = joint
         }
       }
@@ -134,8 +102,7 @@ body, html
   justify-content center
   align-items center
 
-$length = calc(30px - 1px)
-$length-neg = calc(-30px + 1px)
+$length = calc(50px - 1px)
 $gray-dark = darken(lightgray, 50%)
 
 .grid
@@ -175,24 +142,16 @@ $gray-dark = darken(lightgray, 50%)
       margin-top $length
     &__line--top
       position absolute
-      top $length-neg
-      left 0
+      top 0
+      left 1px
       height $length
       width 1px
       background-color $gray-dark
-      transition .5s all ease-out
+      transform-origin 0px 0px
+      transform rotate(180deg)
+      transition .5s all ease-in
       &.hidden
-        background-color transparent
-    &__line--left
-      position absolute
-      top 0
-      left $length-neg
-      height 1px
-      width $length
-      background-color $gray-dark
-      transition .5s all ease-out
-      &.hidden
-        background-color transparent
+        height 0px
     &__line--right
       position absolute
       top 0
@@ -200,11 +159,9 @@ $gray-dark = darken(lightgray, 50%)
       height 1px
       width $length
       background-color $gray-dark
-      transition .5s all ease-out
+      transition .5s all ease-in
       &.hidden
-        background-color transparent
-    // &--line-right:after&--line-bottom-to-right
-    //   background-color transparent
+        width 0px
     &__line--bottom
       position absolute
       top 1px
@@ -212,41 +169,21 @@ $gray-dark = darken(lightgray, 50%)
       height $length
       width 1px
       background-color $gray-dark
-      transition .5s all ease-out
+      transition .5s all ease-in
       &.hidden
-        background-color transparent
-    // &--line-bottom:after&--line-right-to-bottom
-    //   background-color transparent
-    // &--line-right-to-bottom:after
-    //   content ""
-    //   position absolute
-    //   bottom 0px
-    //   right 0px
-    //   height 30px
-    //   width 1px
-    //   background-color red
-    //   transform-origin right bottom
-    //   transform rotate(-90deg)
-    //   transition .5s transform ease-out
-    // &--line-bottom-to-right:after
-    //   content ""
-    //   position absolute
-    //   bottom 0px
-    //   right 0px
-    //   height 1px
-    //   width 30px
-    //   background-color red
-    //   transform-origin right bottom
-    //   transform rotate(90deg)
-    //   transition .5s transform ease-out
-    // &:before
-    //   content: ""
-    //   position absolute
-    //   left calc((30px - 1px) / 2 - 2px / 2)
-    //   top calc((30px - 1px) / 2 - 2px / 2)
-    //   width 2px
-    //   height 2px
-    //   background-color white
+        height 0px
+    &__line--left
+      position absolute
+      top 1px
+      left 0
+      height 1px
+      width $length
+      background-color $gray-dark
+      transform-origin 0 0
+      transform rotate(180deg)
+      transition .5s all ease-in
+      &.hidden
+        width 0px
 
   &:not(:first-child)
     margin-left 10px
