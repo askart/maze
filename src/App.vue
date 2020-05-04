@@ -108,7 +108,7 @@ $gray-dark = darken(lightgray, 50%)
 .grid
   flex 0 1 auto
   position relative
-  background-color lightgray
+  background-color white
   box-sizing border-box
   border 1px solid $gray-dark
   &:before
@@ -118,7 +118,7 @@ $gray-dark = darken(lightgray, 50%)
     left 0
     height 1px
     width $length
-    background-color lightgray
+    background-color white
   &:after
     content ""
     position absolute
@@ -126,7 +126,7 @@ $gray-dark = darken(lightgray, 50%)
     bottom -1px
     height 1px
     width $length
-    background-color lightgray
+    background-color white
   &__row
     display flex
   &__joint
