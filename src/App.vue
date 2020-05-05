@@ -9,6 +9,10 @@
           <div :class="['grid__joint__line--left', {'hidden': !joint.W}]"/>
         </div>
       </div>
+      <div :class="['grid__border--top', {'grid__border--top--animated': gridAnimation}]"/>
+      <div :class="['grid__border--right', {'grid__border--right--animated': gridAnimation}]"/>
+      <div :class="['grid__border--bottom', {'grid__border--bottom--animated': gridAnimation}]"/>
+      <div :class="['grid__border--left', {'grid__border--left--animated': gridAnimation}]"/>
     </div>
   </div>
 </template>
@@ -26,30 +30,34 @@ export default {
     return {
       height: 10,
       width: 15,
-      delay: 10,
       jointMatrix: [],
-      mazeBuildStatus: "",
+      gridAnimation: false,
     }
   },
-  watch: {
-    mazeBuildStatus: {
-      handler: function (val) {
-        if (val == "finished") {
-          setTimeout(() => {
-            this.buildMaze()
-          }, 5000)
-        }
-      },
-    },
-  },
   created() {
-    this.buildMaze()
+    this.initMaze()
   },
   methods: {
+    initMaze() {
+      let jointMatrix = []
+      for (let y = 1; y < this.height; y++) {
+        jointMatrix[y - 1] = []
+        for (let x = 1; x < this.width; x++) {
+          jointMatrix[y - 1][x - 1] = {W: false, N: false, E: false, S: false}
+        }
+      }
+      this.jointMatrix = jointMatrix
+      setTimeout(() => {
+        this.buildMaze()
+        this.gridAnimation = true
+      }, 1000)
+    },
     buildMaze() {
-      this.mazeBuildStatus = "started"
       let grid = this.makePath()
       this.drawMaze(grid)
+      setTimeout(() => {
+        this.buildMaze()
+      }, 5000)
     },
     makePath() {
       let grid = makeGrid(this.height, this.width, 0)
@@ -81,9 +89,6 @@ export default {
         }
       }
       this.jointMatrix = jointMatrix
-      this.$nextTick(() => {
-        this.mazeBuildStatus = "finished"
-      })
     },
   }
 }
@@ -102,39 +107,68 @@ body, html
   justify-content center
   align-items center
 
-$length = calc(50px - 1px)
+$vertical-cells-count = 10
+$horizontal-cells-count = 15
+$thickness = 2px
+$length = 50px - $thickness
+$offset = $thickness
+$top-bottom-border-length = ($length * ($horizontal-cells-count - 1)) + ($thickness * ($horizontal-cells-count - 1))
+$left-right-border-length = ($length * $vertical-cells-count) + ($thickness * ($vertical-cells-count - 1))
 $gray-dark = darken(lightgray, 50%)
 
 .grid
   flex 0 1 auto
   position relative
   background-color white
-  box-sizing border-box
-  border 1px solid $gray-dark
-  &:before
-    content ""
-    position absolute
-    top -1px
-    left 0
-    height 1px
-    width $length
-    background-color white
-  &:after
-    content ""
-    position absolute
-    right 0
-    bottom -1px
-    height 1px
-    width $length
-    background-color white
+  &__border
+    &--top
+      position absolute
+      top 0
+      right 0
+      height $thickness
+      width $thickness
+      background-color $gray-dark
+      transition .5s all ease-in-out
+      &--animated
+        width $top-bottom-border-length
+    &--right
+      position absolute
+      top 0
+      right 0
+      height $thickness
+      width $thickness
+      background-color $gray-dark
+      transition .5s all ease-in-out
+      &--animated
+        height $left-right-border-length
+    &--bottom
+      position absolute
+      bottom 0
+      left 0
+      height $thickness
+      width $thickness
+      background-color $gray-dark
+      transition .5s all ease-in-out
+      &--animated
+        width $top-bottom-border-length
+    &--left
+      position absolute
+      bottom 0
+      left 0
+      height $thickness
+      width $thickness
+      background-color $gray-dark
+      transition .5s all ease-in-out
+      &--animated
+        height $left-right-border-length
   &__row
     display flex
   &__joint
     display inline-block
     position relative
-    height 1px
-    width 1px
-    background-color black
+    height $thickness
+    width $thickness
+    background-color $gray-dark
     margin 0 $length $length 0
     &:first-child
       margin-left $length
@@ -143,48 +177,45 @@ $gray-dark = darken(lightgray, 50%)
     &__line--top
       position absolute
       top 0
-      left 1px
+      left $offset
       height $length
-      width 1px
+      width $thickness
       background-color $gray-dark
       transform-origin 0px 0px
       transform rotate(180deg)
-      transition .5s all ease-in
+      transition .5s all ease-in-out
       &.hidden
         height 0px
     &__line--right
       position absolute
       top 0
-      left 1px
-      height 1px
+      left $offset
+      height $thickness
       width $length
       background-color $gray-dark
-      transition .5s all ease-in
+      transition .5s all ease-in-out
       &.hidden
         width 0px
     &__line--bottom
       position absolute
-      top 1px
+      top $offset
       left 0
       height $length
-      width 1px
+      width $thickness
       background-color $gray-dark
-      transition .5s all ease-in
+      transition .5s all ease-in-out
       &.hidden
         height 0px
     &__line--left
       position absolute
-      top 1px
+      top $offset
       left 0
-      height 1px
+      height $thickness
       width $length
       background-color $gray-dark
       transform-origin 0 0
       transform rotate(180deg)
-      transition .5s all ease-in
+      transition .5s all ease-in-out
       &.hidden
         width 0px
-
-  &:not(:first-child)
-    margin-left 10px
 </style>
